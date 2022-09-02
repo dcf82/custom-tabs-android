@@ -16,12 +16,22 @@
         android:theme="@style/Theme.CustomTabDemo"
         tools:targetApi="31">
 
+        <service android:name="androidx.browser.customtabs.PostMessageService"
+            android:exported="true" tools:ignore="ExportedService" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="http" android:host="master.ds1902kx4fxqy.amplifyapp.com"/>
+                <data android:scheme="https" android:host="master.ds1902kx4fxqy.amplifyapp.com"/>
             </intent-filter>
         </activity>
 

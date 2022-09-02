@@ -21,25 +21,21 @@ import android.widget.Toast;
 public class MainActivity extends Activity {
     private static final String TAG = "CustomTabsDemo";
 
-    // https://peconn.github.io/starters/
-    // http://192.168.1.13:8888/customtabs
-
-    private static final Uri URL = Uri.parse("http://192.168.1.13:8888/customtabs");
+    private static final Uri URL = Uri.parse("https://master.ds1902kx4fxqy.amplifyapp.com");
 
     private CustomTabsSession mSession;
     private CustomTabsServiceConnection mConnection;
     private Button mLaunchButton;
     private TextView mLogView;
 
-    private boolean messageChannelReady;
-    private boolean relationshipValidationResult;
-
+    private boolean isChannelRequestDone = false;
     private final StringBuilder mLogs = new StringBuilder();
 
     @Override
     protected void onStart() {
         super.onStart();
 
+        isChannelRequestDone = false;
         CustomTabsCallback callback = new CustomTabsCallback() {
             @Override
             public void onNavigationEvent(int navigationEvent, @Nullable Bundle extras) {
@@ -54,7 +50,6 @@ public class MainActivity extends Activity {
             @Override
             public void onMessageChannelReady(@Nullable Bundle extras) {
                 appendToLog("onMessageChannelReady: " + bundleToString(extras));
-                messageChannelReady = true;
             }
 
             @Override
@@ -68,9 +63,10 @@ public class MainActivity extends Activity {
                 appendToLog("onRelationshipValidationResult: " + relation
                         + ", Uri: " + requestedOrigin + ", Result: "
                         + result + ", " + bundleToString(extras));
-                relationshipValidationResult = result;
-                if (relationshipValidationResult) {
-                    mSession.requestPostMessageChannel(URL);
+                if (result && !isChannelRequestDone) {
+                    boolean accepted = mSession.requestPostMessageChannel(URL);
+                    appendToLog("Request Post Message Channel Accepted: " + accepted);
+                    isChannelRequestDone = true;
                 }
             }
         };
@@ -82,16 +78,18 @@ public class MainActivity extends Activity {
                 mSession = client.newSession(callback);
                 client.warmup(0);
                 mLaunchButton.setEnabled(true);
-                mSession.validateRelationship(CustomTabsService.RELATION_USE_AS_ORIGIN, URL, new Bundle());
+                mSession.validateRelationship(CustomTabsService.RELATION_USE_AS_ORIGIN,
+                        URL, new Bundle());
             }
 
             @Override
             public void onServiceDisconnected(ComponentName componentName) { }
         };
 
-        String packageName = CustomTabsClient.getPackageName(MainActivity.this, null);
+        String packageName = CustomTabsClient.getPackageName(this, null);
         if (packageName == null) {
-            Toast.makeText(this, "Can't find a Custom Tabs provider.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Can't find a Custom Tabs provider.",
+                    Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -106,12 +104,8 @@ public class MainActivity extends Activity {
         mLogView = findViewById(R.id.logs);
         mLaunchButton = findViewById(R.id.launch);
         mLaunchButton.setOnClickListener(view -> {
-            if (messageChannelReady) {
-                CustomTabsIntent intent = new CustomTabsIntent.Builder(mSession).build();
-                intent.launchUrl(MainActivity.this, URL);
-            } else {
-                Toast.makeText(this, "Message channel NOT ready", Toast.LENGTH_LONG).show();
-            }
+            CustomTabsIntent intent = new CustomTabsIntent.Builder(mSession).build();
+            intent.launchUrl(this, URL);
         });
     }
 
